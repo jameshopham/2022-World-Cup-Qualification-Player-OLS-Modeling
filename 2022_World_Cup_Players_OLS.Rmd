@@ -1,0 +1,154 @@
+---
+title: "Stat630FinalProject"
+author: "James Hopham"
+output: pdf_document
+date: "2022-11-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+Argentina<-read_csv("2022 Argentina.csv")
+Belgium<-read_csv("2022 Belgium.csv")
+Brazil<-read_csv("2022 Brazil.csv")
+Croatia<-read_csv("2022 Croatia.csv")
+Denmark<-read_csv("2022 Denmark.csv")
+England<-read_csv("2022 England.csv")
+France<-read_csv("2022 France.csv")
+Germany<-read_csv("2022 Germany.csv")
+Netherlands<-read_csv("2022 Netherlands.csv")
+Poland<-read_csv("2022 Poland.csv")
+Portugal<-read_csv("2022 Portugal.csv")
+Spain<-read_csv("2022 Spain.csv")
+Switzerland<-read_csv("2022 Switzerland.csv")
+UnitedStates<-read_csv("2022 United States.csv")
+Wales<-read_csv("2022 Wales.csv")
+
+
+
+```
+
+```{r}
+Europe_SouthAmerica_old<-rbind(Belgium,Brazil,Croatia,Denmark,England,France,Germany,Netherlands,Poland,Portugal,Spain,Switzerland,UnitedStates,Wales)
+
+Europe_SouthAmerica_final<- Europe_SouthAmerica_old %>% 
+  select(Player, Age, Min_Playing_Time) 
+
+Europe_SouthAmerica_final<-na.omit(Europe_SouthAmerica_final)
+
+```
+
+Check Conditions:
+
+Linearity
+
+```{r}
+ggplot(Europe_SouthAmerica_final, aes(x = Age, y = Min_Playing_Time)) +
+  geom_point()+
+  labs(x="Age",
+       y="Playing Time (In Minutes)",
+       title="Linearity")
+
+```
+
+Independence Normality of the residuals
+
+```{r}
+# Run SLR model
+mod <- lm(Min_Playing_Time ~ Age, data = Europe_SouthAmerica_final)
+
+
+# Check Normality Assumption
+qqnorm(resid(mod))
+qqline(resid(mod), col = "red")
+
+hist(resid(mod)) 
+hist(log(Europe_SouthAmerica_final$Min_Playing_Time))
+#transformations didnt help
+
+```
+
+\
+Equal (constant) Variance of the residuals
+
+```{r}
+plot(resid(mod) ~ fitted(mod), main = "Residuals vs. Fitted")  
+abline(h = 0, col = "red")
+```
+
+## Transform X
+
+```{r}
+Europe_SouthAmerica_final_Transform <- Europe_SouthAmerica_final %>% 
+  mutate(log_Age = log(Age))
+```
+
+Check Assumptions
+
+```{r}
+ggplot(Europe_SouthAmerica_final_Transform, aes(x = log_Age, y = Min_Playing_Time)) +
+  geom_point()+
+  labs(x="Age",
+       y="Playing Time (In Minutes)",
+       title="Linearity")
+
+#log transformation
+mod_new <- lm(Min_Playing_Time ~ log_Age, data = Europe_SouthAmerica_final_Transform)
+
+#log transformation
+qqnorm(resid(mod_new))
+qqline(resid(mod_new), col = "red")
+#transformation has no significant effect on qq plot
+
+#log transformation
+plot(resid(mod_new) ~ fitted(mod_new), main = "Residuals vs. Fitted")  
+abline(h = 0, col = "red") 
+
+```
+
+Summary Statistics:
+
+```{r}
+Europe_SouthAmerica_final_Transform %>% 
+  summarise(mean(log_Age), sd(log_Age),
+            mean(Age), sd(Age),
+            mean(Min_Playing_Time), sd(Min_Playing_Time))
+```
+
+Regression Plots
+
+```{r}
+ggplot (Europe_SouthAmerica_final_Transform, aes(x = Age, y = Min_Playing_Time)) +
+  geom_point () +
+  geom_smooth (method = "lm", se = FALSE)+
+  labs (title = "Age vs. Playing Time",
+        x= "Age",
+        y="Playing Time (in minutes)" )
+  
+#log transform
+ggplot (Europe_SouthAmerica_final_Transform, aes(x = log_Age, y = Min_Playing_Time)) +
+  geom_point () +
+  geom_smooth (method = "lm", se = FALSE)+
+  labs (title = "Age vs. Playing Time",
+        x= "log(Age)",
+        y="Playing Time (in minutes)" )
+```
+
+Modeling
+
+```{r}
+modeling<-lm(Min_Playing_Time ~ Age, data=Europe_SouthAmerica_final)
+summary(modeling)
+```
+
+```{r}
+1-.000267/2
+.000267/2
+
+confint(modeling)
+
+#9.749 + c(-1, 1) * qt(.975, df = 446) * 2.655
+```
